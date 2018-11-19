@@ -16,6 +16,8 @@ $GLOBALS['stack'] = [
     'condutor' => [],
 ];
 
+// Helpers --------------------------------------------------------------------
+
 function str_quoted($str = '')
 {
     return "\"$str\"";
@@ -28,11 +30,21 @@ function appendToStack($ref, $value)
 
 function getFromStack($ref, $asArray = false, $delimiter = ':')
 {
+    if (getCountFromStack($ref) === 0) {
+        return null;
+    }
+
     $idx = array_rand($GLOBALS['stack'][$ref]);
     if ($asArray) {
         return explode($delimiter, $GLOBALS['stack'][$ref][$idx]);
     }
+
     return $GLOBALS['stack'][$ref][$idx];
+}
+
+function getCountFromStack($ref)
+{
+    return count($GLOBALS['stack'][$ref]);
 }
 
 function getCredentials()
@@ -49,12 +61,19 @@ function genPassword($faker)
     return str_quoted($faker->regexify('[A-Z0-9a-z]{6,10}'));
 }
 
+function genPlate($faker)
+{
+    return str_quoted($faker->regexify('[0-9]{2}-[A-Z]{2}-[0-9]{2}'));
+}
+
 function genTuple($faker)
 {
     $x = $faker->randomFloat(1, 0, 100);
     $y = $faker->randomFloat(1, 0, 100);
     return "($x, $y)";
 }
+
+// Statements Generators ------------------------------------------------------
 
 function genEmpresa($faker)
 {
@@ -103,29 +122,54 @@ function genCondutor($faker)
     return "$cmd $user $name $pass $address $birthday $number $company[0] ;";
 }
 
+function genVehicle($faker, $vehicleType)
+{
+    $plate = genPlate($faker);
+    $reliability = $faker->numberBetween(10, 100);
+    $tuple = genTuple($faker);
+    // get company name
+    $company = $faker->boolean ?
+                getFromStack(Registar::List[Registar::Empresa], true) :
+                null;
+
+    $cmd = Registar::List[$vehicleType];
+
+    if (is_null($company)) {
+        // Get a driver
+        $driver = getFromStack(Registar::List[Registar::Condutor], true);
+        return "$cmd $plate $reliability $tuple $driver[0] ;";
+    }
+    return "$cmd $plate $reliability $tuple empresa $company[0] ;";
+}
+
 function genRegistar($faker, $stmt)
 {
     $constraints = function ($stmt) {
         if ($GLOBALS['users'] > 0) {
+            // If statement number is a vehicle, make sure there are drivers
+            if ($stmt === Registar::Mota) {
+                return getCountFromStack(Registar::List[Registar::Condutor]) > 0;
+            }
             return true;
         }
-        return $stmt >= 0 && $stmt <= 1;
+        return $stmt >= Registar::Empresa && $stmt <= Registar::Condutor;
     };
 
-    $regType = $faker->valid($constraints)->numberBetween(0, 2);
+    $regType = $faker->valid($constraints)->numberBetween(0, 6);
 
     switch ($regType) {
         case Registar::Empresa:
-            $GLOBALS['users'] += 1;
             return $stmt . genEmpresa($faker);
         case Registar::Cliente:
             $GLOBALS['users'] += 1;
             return $stmt . genCliente($faker);
         case Registar::Condutor:
-            $GLOBALS['users'] += 1;
             return $stmt . genCondutor($faker);
-        default:
-            return $stmt . '**WIP**';
+        case Registar::Mota:
+        case Registar::Carro:
+        case Registar::Carrinha:
+        case Registar::Helicoptero:
+            return $stmt . genVehicle($faker, $regType);
   }
 }
 
@@ -165,8 +209,6 @@ function genStatement($faker, $constraints)
       case Statement::Registar:
         $stmt = Statement::List[$stmtType] . ' ';
         return genRegistar($faker, $stmt);
-      default:
-        return '**WIP**';
     }
 }
 
