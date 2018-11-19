@@ -13,6 +13,7 @@ $GLOBALS['session'] = 'logout';
 $GLOBALS['stack'] = [
     'empresa' => [],
     'cliente' => [],
+    'condutor' => [],
 ];
 
 function str_quoted($str = '')
@@ -76,6 +77,21 @@ function genCliente($faker)
     return Registar::List[Registar::Cliente] . " $user $name $pass $address $birthday $tuple ;";
 }
 
+function genCondutor($faker, $hasCompany = false)
+{
+    $user = str_quoted($faker->freeEmail);
+    $name = str_quoted($faker->name);
+    $pass = genPassword($faker);
+    $address = str_quoted($faker->address);
+    $birthday = $faker->date();
+    $number = $faker->numberBetween(10, 100);
+    $company = $hasCompany ? $faker->name : null;
+
+    appendToStack(Registar::List[Registar::Condutor], "$user:$pass");
+
+    return Registar::List[Registar::Condutor] . " $user $name $pass $address $birthday $number ;";
+}
+
 function genRegistar($faker, $stmt)
 {
     $constraints = function ($stmt) {
@@ -85,7 +101,7 @@ function genRegistar($faker, $stmt)
         return $stmt >= 0 && $stmt <= 1;
     };
 
-    $regType = $faker->valid($constraints)->numberBetween(0, 1);
+    $regType = $faker->valid($constraints)->numberBetween(0, 2);
 
     switch ($regType) {
         case Registar::Empresa:
@@ -94,6 +110,9 @@ function genRegistar($faker, $stmt)
         case Registar::Cliente:
             $GLOBALS['users'] += 1;
             return $stmt . genCliente($faker);
+        case Registar::Condutor:
+            $GLOBALS['users'] += 1;
+            return $stmt . genCondutor($faker);
         default:
             return $stmt . '**WIP**';
   }
@@ -140,7 +159,7 @@ function genStatement($faker, $constraints)
     }
 }
 
-function main($numOfBlocks = 10, $maxBlockSize = 12, $debug = false)
+function main($numOfBlocks = 10, $maxBlockSize = 12, $debug = true)
 {
     $faker = Faker\Factory::create('pt_PT');
 
