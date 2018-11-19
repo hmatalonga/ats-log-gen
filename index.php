@@ -212,7 +212,7 @@ function genStatement($faker, $constraints)
     }
 }
 
-function main($numOfBlocks = 10, $maxBlockSize = 12, $debug = true)
+function main($numOfBlocks = 10, $maxBlockSize = 12, $debug = false)
 {
     $faker = Faker\Factory::create('pt_PT');
 
