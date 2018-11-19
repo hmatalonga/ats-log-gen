@@ -13,5 +13,4 @@ $ composer install
 ```bash
 $ composer run # via composer script
 $ php index.php > result.log # export to a log file
-``
 ```
