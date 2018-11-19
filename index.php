@@ -26,9 +26,12 @@ function appendToStack($ref, $value)
     array_push($GLOBALS['stack'][$ref], $value);
 }
 
-function getFromStack($ref)
+function getFromStack($ref, $asArray = false, $delimiter = ':')
 {
     $idx = array_rand($GLOBALS['stack'][$ref]);
+    if ($asArray) {
+        return explode($delimiter, $GLOBALS['stack'][$ref][$idx]);
+    }
     return $GLOBALS['stack'][$ref][$idx];
 }
 
@@ -77,7 +80,7 @@ function genCliente($faker)
     return Registar::List[Registar::Cliente] . " $user $name $pass $address $birthday $tuple ;";
 }
 
-function genCondutor($faker, $hasCompany = false)
+function genCondutor($faker)
 {
     $user = str_quoted($faker->freeEmail);
     $name = str_quoted($faker->name);
@@ -85,11 +88,19 @@ function genCondutor($faker, $hasCompany = false)
     $address = str_quoted($faker->address);
     $birthday = $faker->date();
     $number = $faker->numberBetween(10, 100);
-    $company = $hasCompany ? $faker->name : null;
+    // get company name
+    $company = $faker->boolean ?
+                getFromStack(Registar::List[Registar::Empresa], true) :
+                null;
 
     appendToStack(Registar::List[Registar::Condutor], "$user:$pass");
 
-    return Registar::List[Registar::Condutor] . " $user $name $pass $address $birthday $number ;";
+    $cmd = Registar::List[Registar::Condutor];
+
+    if (is_null($company)) {
+        return "$cmd $user $name $pass $address $birthday $number ;";
+    }
+    return "$cmd $user $name $pass $address $birthday $number $company[0] ;";
 }
 
 function genRegistar($faker, $stmt)
