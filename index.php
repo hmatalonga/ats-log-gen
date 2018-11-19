@@ -91,7 +91,7 @@ function genCliente($faker)
     $name = str_quoted($faker->name);
     $pass = genPassword($faker);
     $address = str_quoted($faker->address);
-    $birthday = $faker->date();
+    $birthday = $faker->date('Y-m-d', '2000-01-01');
     $tuple = genTuple($faker);
 
     appendToStack(Registar::List[Registar::Cliente], "$user:$pass");
@@ -105,7 +105,7 @@ function genCondutor($faker)
     $name = str_quoted($faker->name);
     $pass = genPassword($faker);
     $address = str_quoted($faker->address);
-    $birthday = $faker->date();
+    $birthday = $faker->date('Y-m-d', '2000-01-01');
     $number = $faker->numberBetween(10, 100);
     // get company name
     $company = $faker->boolean ?
@@ -147,7 +147,7 @@ function genRegistar($faker, $stmt)
     $constraints = function ($stmt) {
         if ($GLOBALS['users'] > 0) {
             // If statement number is a vehicle, make sure there are drivers
-            if ($stmt === Registar::Mota) {
+            if ($stmt >= Registar::Mota && $stmt <= Registar::Helicoptero) {
                 return getCountFromStack(Registar::List[Registar::Condutor]) > 0;
             }
             return true;
